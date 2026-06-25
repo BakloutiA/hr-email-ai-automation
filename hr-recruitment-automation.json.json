@@ -1,0 +1,188 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "subject:('EDEKA Candidate\")"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        592,
+        -224
+      ],
+      "id": "a8b9d1b5-400a-45ef-902e-0ac81b09d1f6",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1nGWPOxNzGxCTQ8i",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an HR Assistant for EDEKA. Analyze the following incoming email body and extract the candidate's core information. \n\nProvide the output strictly in clean JSON format with these exact keys:\n- \"candidateName\"\n- \"candidateEmail\"\n- \"appliedPosition\"\n- \"storeLocation\"\n\nEmail Body:\n{{ $json.snippet}}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        800,
+        -224
+      ],
+      "id": "b5cc25a8-9d58-465a-84e4-22b6c4089169",
+      "name": "Basic LLM Chain",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0e5dd01-c578-4024-b967-65d893b52945",
+              "name": "candidateName",
+              "value": "={{ JSON.parse($json.text.replace(/```json|```/g, '').trim()).candidateName }}",
+              "type": "string"
+            },
+            {
+              "id": "8069cf60-e4f4-40ba-9826-06c029c41b4e",
+              "name": "candidateEmail",
+              "value": "={{ JSON.parse($json.text.replace(/```json|```/g, '').trim()).candidateEmail }}",
+              "type": "string"
+            },
+            {
+              "id": "878726be-cee4-4f45-b574-de10221f5973",
+              "name": "appliedPosition",
+              "value": "={{ JSON.parse($json.text.replace(/```json|```/g, '').trim()).appliedPosition }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1152,
+        -224
+      ],
+      "id": "e972e75b-2680-45c3-a41f-0afaa2a344e5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.candidateEmail  }}",
+        "subject": "Application Received - EDEKA HR Team",
+        "message": "=Hello {{ $json.candidateName  }}, Thank you for your application for the {{ $json.appliedPosition }} position. We have successfully parsed your details into our local tracking database and our HR team will folow up shortly. \nBest regards,\nEDEKA Recruiting Automation Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        -224
+      ],
+      "id": "1c79ef04-e5e4-4645-9e7b-6a23ca1235c3",
+      "name": "Send a message",
+      "webhookId": "40aca626-9bc8-4377-9e2f-e67c62489f5a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1nGWPOxNzGxCTQ8i",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "7709cf20-0201-40ab-8786-2d87c1353ca8",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "YWtl3cXGZSUvimnx",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2aadc574-5260-4ccc-bb5d-1327ff9fc937",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e2e2178095dfb4ad68b13d9996c239df1e67ce25828fb782d2ed4bd6d15965b5"
+  },
+  "nodeGroups": [],
+  "id": "aNoK5usVoEky85Tp",
+  "tags": []
+}
